@@ -68,7 +68,7 @@ You need two things: Python on your Windows PC, and Safari on your iPhone. Both 
 ### Install
 
 ```bash
-git clone https://github.com/YourUsername/ClipGuard.git
+git clone https://github.com/DEVTHAKUR-90/ClipGuard.git
 cd ClipGuard
 pip install -r requirements.txt
 ```
@@ -259,7 +259,13 @@ Found a bug? Want to add a feature? PRs are welcome.
 
 ---
 
+## Author
 
+**Dev Thakur**
+
+Cybersecurity enthusiast and developer focused on building systems where security is a first-class concern — not an afterthought.
+
+[![GitHub](https://img.shields.io/badge/GitHub-DevThakur-181717?style=flat-square&logo=github)](https://github.com/DEVTHAKUR-90)
 
 ---
 
