@@ -259,9 +259,7 @@ Found a bug? Want to add a feature? PRs are welcome.
 
 ---
 
-## 📄 License
 
-MIT — do whatever you want with it.
 
 ---
 
