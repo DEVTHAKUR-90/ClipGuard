@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ClipSync">
+<meta name="theme-color" content="#0a0a0f">
+<link rel="manifest" href="/manifest.json">
+<title>ClipSync</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0a0a0f; --bg2: #111118; --bg3: #15151e;
+  --border: #1e1e2e; --accent: #00ff88; --blue: #3b82f6;
+  --danger: #f43f5e; --text: #e8e8f0; --sub: #8888a8;
+  --mono: 'JetBrains Mono', monospace; --sans: 'Inter', sans-serif;
+  --r: 12px;
+  --st: env(safe-area-inset-top, 0px);
+  --sb: env(safe-area-inset-bottom, 0px);
+}
+html, body {
+  height: 100%; background: var(--bg); color: var(--text);
+  font-family: var(--sans); overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+body::before {
+  content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background:
+    radial-gradient(ellipse 50% 40% at 15% 5%, rgba(0,255,136,.05) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 50% at 85% 95%, rgba(59,130,246,.04) 0%, transparent 60%);
+}
+
+.app {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  padding-top: var(--st); padding-bottom: var(--sb);
+  z-index: 1;
+}
+
+/* ── Screens ── */
+.screen {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 20px;
+}
+.screen.gone { display: none !important; }
+
+/* ── Auth ── */
+#s-auth .brand { font-size: .8rem; font-weight: 700; letter-spacing: .4em; color: var(--accent); margin-bottom: 4px; }
+#s-auth .tagline { font-size: .62rem; letter-spacing: .18em; color: var(--sub); margin-bottom: 36px; text-transform: uppercase; }
+.card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 18px; padding: 28px 24px; width: 100%; max-width: 360px;
+}
+.clabel { font-size: .6rem; letter-spacing: .2em; color: var(--sub); text-transform: uppercase; margin-bottom: 12px; }
+.pins { display: flex; gap: 8px; justify-content: center; margin-bottom: 20px; }
+.pin-d {
+  width: 42px; height: 52px; background: var(--bg3); border: 1.5px solid var(--border);
+  border-radius: 10px; font-family: var(--mono); font-size: 1.4rem; font-weight: 600;
+  color: var(--accent); text-align: center; caret-color: var(--accent); outline: none;
+  -webkit-appearance: none; appearance: none;
+}
+.pin-d:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,255,136,.1); }
+
+.btn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; padding: 14px; border-radius: var(--r); border: none;
+  font-family: var(--sans); font-size: .85rem; font-weight: 600;
+  cursor: pointer; transition: all .18s; -webkit-tap-highlight-color: transparent;
+}
+.btn-accent { background: var(--accent); color: #0a0a0f; }
+.btn-accent:active { background: #00d970; transform: scale(.98); }
+.btn-accent:disabled { opacity: .45; cursor: not-allowed; }
+.btn-ghost { background: transparent; color: var(--sub); border: 1px solid var(--border); margin-top: 10px; font-size: .8rem; }
+.btn-ghost:active { background: var(--bg3); color: var(--text); }
+.errmsg { margin-top: 14px; font-size: .74rem; text-align: center; min-height: 18px; color: var(--danger); font-family: var(--mono); }
+.errmsg.ok { color: var(--accent); }
+
+/* ── Main ── */
+#s-main { align-items: stretch; justify-content: flex-start; padding: 0; overflow: hidden; }
+.topbar { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 0; width: 100%; flex-shrink: 0; }
+.t-logo { font-size: .78rem; font-weight: 700; letter-spacing: .3em; color: var(--accent); }
+.t-badge {
+  display: flex; align-items: center; gap: 5px; font-size: .6rem; letter-spacing: .08em; color: var(--sub);
+  background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; padding: 5px 12px;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.t-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--sub); flex-shrink: 0; transition: background .3s; }
+.t-dot.live { background: var(--accent); animation: blink 1.8s ease infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+/* Tabs */
+.tabs {
+  display: flex; gap: 3px; margin: 12px 16px 0;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--r); padding: 3px; flex-shrink: 0;
+}
+.tab {
+  flex: 1; padding: 9px 6px; border-radius: 9px; border: none;
+  background: transparent; color: var(--sub);
+  font-family: var(--sans); font-size: .7rem; font-weight: 600;
+  letter-spacing: .06em; cursor: pointer; transition: all .18s;
+  -webkit-tap-highlight-color: transparent;
+}
+.tab.on { background: var(--bg3); color: var(--accent); border: 1px solid var(--border); }
+
+/* Panels */
+.panels { flex: 1 1 0%; min-height: 0; overflow: hidden; position: relative; margin-top: 12px; }
+.panel { position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 16px 24px; }
+.panel.off { display: none; }
+
+/* ── Clipboard panel — dual boxes ── */
+.clip-section {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 14px; padding: 14px; margin-bottom: 12px;
+  transition: border-color .3s;
+}
+.clip-section.fx { border-color: var(--accent); }
+.clip-header {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;
+}
+.clip-label { font-size: .58rem; letter-spacing: .18em; color: var(--sub); text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
+.clip-label .dir-icon { font-size: .7rem; }
+.clip-clear {
+  font-size: .55rem; letter-spacing: .1em; font-family: var(--mono);
+  color: var(--sub); background: transparent; border: 1px solid var(--border);
+  border-radius: 20px; padding: 3px 10px; cursor: pointer;
+  transition: all .15s; -webkit-tap-highlight-color: transparent;
+}
+.clip-clear:active { background: rgba(244,63,94,.1); color: var(--danger); border-color: var(--danger); }
+
+textarea.clip-ta {
+  width: 100%; min-height: 72px; max-height: 140px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 9px; color: var(--text);
+  font-family: var(--mono); font-size: .8rem; line-height: 1.5;
+  padding: 10px 12px; resize: vertical; outline: none;
+  -webkit-appearance: none; margin-bottom: 8px;
+}
+textarea.clip-ta:focus { border-color: var(--accent); }
+textarea.clip-ta[readonly] { color: var(--sub); resize: none; cursor: default; }
+textarea.clip-ta[readonly]:focus { border-color: var(--border); }
+
+.clip-actions { display: flex; gap: 8px; }
+.clip-actions .btn { flex: 1; margin: 0; font-size: .76rem; padding: 11px 8px; }
+
+.clip-ts {
+  font-size: .52rem; font-family: var(--mono); color: var(--sub);
+  margin-top: 6px; text-align: right; min-height: 14px;
+}
+
+/* History */
+.sec-head {
+  font-size: .58rem; letter-spacing: .2em; color: var(--sub);
+  text-transform: uppercase; margin: 14px 0 8px;
+  display: flex; align-items: center; gap: 8px;
+}
+.sec-head::after { content:''; flex:1; height:1px; background:var(--border); }
+
+.hist-item {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 12px; margin-bottom: 6px;
+  animation: fadeUp .2s ease;
+}
+@keyframes fadeUp { from{opacity:0;transform:translateY(-5px)} to{opacity:1;transform:none} }
+.hist-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.hist-dir { font-size: .52rem; letter-spacing: .1em; font-family: var(--mono); padding: 2px 7px; border-radius: 20px; }
+.hist-dir.win { color: var(--blue); background: rgba(59,130,246,.1); }
+.hist-dir.ios { color: var(--accent); background: rgba(0,255,136,.08); }
+.hist-time { font-size: .52rem; color: var(--sub); font-family: var(--mono); }
+.hist-body {
+  font-family: var(--mono); font-size: .75rem; color: var(--text);
+  line-height: 1.4; word-break: break-word;
+  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+}
+.hist-copy {
+  font-size: .52rem; color: var(--accent); font-family: var(--mono);
+  padding: 2px 8px; border: 1px solid rgba(0,255,136,.22); border-radius: 20px;
+  cursor: pointer; margin-left: 8px;
+}
+
+.empty { text-align: center; padding: 28px 0; color: var(--sub); font-size: .75rem; }
+
+/* ── Files ── */
+.dropzone {
+  background: var(--bg2); border: 2px dashed var(--border);
+  border-radius: 14px; padding: 28px 20px; text-align: center;
+  cursor: pointer; transition: all .22s; margin-bottom: 12px;
+}
+.dropzone.over { border-color: var(--accent); background: rgba(0,255,136,.03); }
+.dz-icon { font-size: 2rem; margin-bottom: 6px; }
+.dz-text { font-size: .78rem; color: var(--sub); }
+#fi { display: none; }
+.fitem {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 12px; margin-bottom: 6px;
+}
+.ficon { font-size: 1.2rem; flex-shrink: 0; }
+.finfo { flex: 1; min-width: 0; }
+.fname { font-size: .75rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fmeta { font-size: .58rem; color: var(--sub); font-family: var(--mono); }
+.fprog { height: 2px; background: var(--border); border-radius: 2px; margin-top: 3px; overflow: hidden; }
+.fprog-bar { height: 100%; background: var(--accent); transition: width .3s; }
+.fstat { font-size: .55rem; font-family: var(--mono); padding: 2px 8px; border-radius: 20px; flex-shrink: 0; }
+.fstat.sending { color: var(--blue); background: rgba(59,130,246,.1); }
+.fstat.done { color: var(--accent); background: rgba(0,255,136,.08); }
+.fstat.err { color: var(--danger); background: rgba(244,63,94,.08); }
+.dl-link {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 12px; margin-bottom: 6px;
+  text-decoration: none; color: var(--text);
+}
+.dl-name { flex: 1; font-size: .75rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dl-size { font-size: .58rem; color: var(--sub); font-family: var(--mono); }
+
+/* ── Settings ── */
+.scard { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 10px; }
+.srow { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: .78rem; }
+.srow:last-child { border: none; padding-bottom: 0; }
+.srow-label { color: var(--sub); }
+.srow-value { font-family: var(--mono); font-size: .65rem; color: var(--text); max-width: 55%; text-align: right; word-break: break-all; }
+.toggle { width: 38px; height: 21px; border-radius: 11px; background: var(--border); position: relative; border: none; cursor: pointer; transition: background .2s; flex-shrink: 0; }
+.toggle.on { background: var(--accent); }
+.toggle::after { content: ''; position: absolute; top: 2.5px; left: 2.5px; width: 16px; height: 16px; border-radius: 50%; background: white; transition: transform .2s; }
+.toggle.on::after { transform: translateX(17px); }
+
+/* ── Toast ── */
+#toast {
+  position: fixed; bottom: calc(var(--sb) + 20px);
+  left: 50%; transform: translateX(-50%) translateY(80px);
+  background: var(--bg2); border: 1px solid var(--border);
+  color: var(--text); font-family: var(--mono); font-size: .7rem;
+  padding: 9px 16px; border-radius: 40px; z-index: 999;
+  transition: transform .28s cubic-bezier(.175,.885,.32,1.275);
+  white-space: nowrap; box-shadow: 0 6px 32px rgba(0,0,0,.6);
+  max-width: 88vw; overflow: hidden; text-overflow: ellipsis;
+}
+#toast.show { transform: translateX(-50%) translateY(0); }
+#toast.ok { border-color: var(--accent); color: var(--accent); }
+#toast.bad { border-color: var(--danger); color: var(--danger); }
+
+.spin { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: rot .65s linear infinite; }
+@keyframes rot { to { transform: rotate(360deg); } }
+
+.modal-bg { display: none; position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,.82); align-items: center; justify-content: center; padding: 20px; }
+.modal-bg.open { display: flex; }
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- AUTH -->
+<div class="screen" id="s-auth">
+  <p class="brand">CLIPSYNC</p>
+  <p class="tagline">Local · Private · Instant</p>
+  <div class="card">
+    <p class="clabel">Enter the 6-digit PIN from your Windows dashboard</p>
+    <div class="pins" id="pins"></div>
+    <button class="btn btn-accent" id="auth-btn" onclick="doAuth()">Connect</button>
+    <button class="btn btn-ghost" onclick="openUrlModal()">Enter server URL manually</button>
+    <div class="errmsg" id="auth-err"></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="screen gone" id="s-main">
+  <div class="topbar">
+    <span class="t-logo">CLIPSYNC</span>
+    <div class="t-badge" onclick="forceReconnect()">
+      <span class="t-dot" id="t-dot"></span>
+      <span id="t-lbl">CONNECTING</span>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab on" onclick="goTab('clip',this)">CLIPBOARD</button>
+    <button class="tab" onclick="goTab('files',this)">FILES</button>
+    <button class="tab" onclick="goTab('settings',this)">SETTINGS</button>
+  </div>
+
+  <div class="panels">
+
+    <!-- Clipboard -->
+    <div class="panel" id="p-clip">
+
+      <!-- SEND: iPhone → Windows -->
+      <div class="clip-section" id="send-section">
+        <div class="clip-header">
+          <span class="clip-label"><span class="dir-icon">📱→🖥</span> IPHONE → WINDOWS</span>
+          <button class="clip-clear" onclick="clearSend()">✕ CLEAR</button>
+        </div>
+        <textarea class="clip-ta" id="ta-send" placeholder="Type or paste text here…" autocomplete="off" autocorrect="off" spellcheck="false"></textarea>
+        <div class="clip-actions">
+          <button class="btn btn-accent" onclick="sendClip()">Send to Windows</button>
+          <button class="btn btn-ghost" onclick="pasteIn()" style="flex:0.5">Paste</button>
+        </div>
+        <div class="clip-ts" id="send-ts"></div>
+      </div>
+
+      <!-- RECEIVE: Windows → iPhone -->
+      <div class="clip-section" id="recv-section">
+        <div class="clip-header">
+          <span class="clip-label"><span class="dir-icon">🖥→📱</span> WINDOWS → IPHONE</span>
+          <button class="clip-clear" onclick="clearRecv()">✕ CLEAR</button>
+        </div>
+        <textarea class="clip-ta" id="ta-recv" readonly placeholder="Waiting for Windows clipboard…"></textarea>
+        <div class="clip-actions">
+          <button class="btn btn-ghost" onclick="copyRecv()">Copy to iPhone</button>
+        </div>
+        <div class="clip-ts" id="recv-ts"></div>
+      </div>
+
+      <!-- History -->
+      <div class="sec-head">HISTORY</div>
+      <div id="hist-list">
+        <div class="empty">Clipboard history will appear here</div>
+      </div>
+    </div>
+
+    <!-- Files -->
+    <div class="panel off" id="p-files">
+      <div class="dropzone" id="dz" onclick="document.getElementById('fi').click()">
+        <div class="dz-icon">📤</div>
+        <p class="dz-text">Tap to pick files</p>
+      </div>
+      <input type="file" id="fi" multiple onchange="pickFiles(this.files)">
+      <div id="ulist"></div>
+      <div class="sec-head">ON WINDOWS</div>
+      <div id="dlist"><div class="empty">No files yet</div></div>
+      <button class="btn btn-ghost" onclick="loadFiles()" style="margin-top:8px">↻ Refresh</button>
+    </div>
+
+    <!-- Settings -->
+    <div class="panel off" id="p-settings">
+      <div class="scard">
+        <p class="clabel">Connection</p>
+        <div class="srow"><span class="srow-label">Server</span><span class="srow-value" id="s-srv">—</span></div>
+        <div class="srow"><span class="srow-label">Status</span><span class="srow-value" id="s-stat">—</span></div>
+        <div class="srow"><span class="srow-label">Auto-copy incoming</span><button class="toggle on" id="tog-ac" onclick="toggleAC(this)"></button></div>
+      </div>
+      <div class="scard">
+        <p class="clabel">Apple Shortcut · Back Tap</p>
+        <ol style="padding-left:16px;font-size:.72rem;line-height:1.85;color:var(--sub)">
+          <li>Open <b style="color:var(--text)">Shortcuts</b> → <b style="color:var(--text)">+</b></li>
+          <li>Add: <b style="color:var(--text)">Get Clipboard</b></li>
+          <li>Add: <b style="color:var(--text)">Get Contents of URL</b>
+            <ul style="list-style:disc;padding-left:14px;margin-top:3px">
+              <li>URL: <code id="s-surl" style="font-size:.6rem;color:var(--accent)">—</code></li>
+              <li>Method: POST · Body: JSON · key: <code style="color:var(--accent)">text</code> = Clipboard</li>
+              <li>Header: <code id="s-tok" style="font-size:.6rem;color:var(--accent)">—</code></li>
+            </ul>
+          </li>
+          <li><b style="color:var(--text)">Settings → Accessibility → Touch → Back Tap</b></li>
+        </ol>
+      </div>
+      <div class="scard">
+        <button class="btn btn-ghost" onclick="doDisconnect()" style="color:var(--danger);border-color:rgba(244,63,94,.25);margin:0">Disconnect</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- URL modal -->
+<div class="modal-bg" id="url-modal">
+  <div class="card" style="max-width:320px">
+    <p class="clabel">Windows Server URL</p>
+    <input id="url-inp" type="url" placeholder="http://192.168.x.x:8765"
+      style="width:100%;padding:12px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);font-family:var(--mono);font-size:.8rem;outline:none;margin-bottom:12px;-webkit-appearance:none">
+    <button class="btn btn-accent" onclick="applyUrl()">Apply</button>
+    <button class="btn btn-ghost" onclick="closeUrlModal()">Cancel</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  ClipSync v2.0
+// ═══════════════════════════════════════════════════════════
+
+const S = {
+  url: '', token: '', ws: null, wsOk: false,
+  recon: null, ping: null, poll: null,
+  lastRx: '', lastTx: '',
+  lastRxTime: 0, lastTxTime: 0,
+  autoCopy: true, reconDelay: 1500,
+};
+
+function norm(s) { return (s||'').replace(/\r\n/g,'\n').replace(/\r/g,'\n').trim(); }
+function ts() { return new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'}); }
+
+// ─── Boot ────────────────────────────────────────────────────────────────────
+(function(){
+  buildPins();
+  const sp = new URLSearchParams(location.search);
+  const session = sp.get('session');
+  if (session) {
+    sessionStorage.setItem('cs_session', session);
+    S.url = location.origin;
+    sessionStorage.setItem('cs_url', S.url);
+    history.replaceState(null,'','/');
+  }
+  const tok = sessionStorage.getItem('cs_token');
+  const url = sessionStorage.getItem('cs_url');
+  if (tok && url) { S.url=url; S.token=tok; enterMain(); }
+  S.autoCopy = localStorage.getItem('cs_ac') !== 'false';
+  const tog = document.getElementById('tog-ac');
+  if (tog) tog.className = 'toggle' + (S.autoCopy ? ' on' : '');
+})();
+
+// ─── PIN ─────────────────────────────────────────────────────────────────────
+function buildPins() {
+  const c = document.getElementById('pins');
+  for (let i=0;i<6;i++) {
+    const el=document.createElement('input');
+    el.type='tel';el.maxLength=1;el.className='pin-d';el.autocomplete='one-time-code';el.inputMode='numeric';
+    el.addEventListener('input',ev=>{const v=ev.target.value.replace(/\D/g,'');ev.target.value=v;if(v&&i<5)c.children[i+1].focus();if(i===5&&v)doAuth()});
+    el.addEventListener('keydown',ev=>{if(ev.key==='Backspace'&&!ev.target.value&&i>0)c.children[i-1].focus()});
+    el.addEventListener('paste',ev=>{ev.preventDefault();const p=(ev.clipboardData||window.clipboardData).getData('text').replace(/\D/g,'');[...p.slice(0,6)].forEach((ch,j)=>{if(c.children[j])c.children[j].value=ch});c.children[Math.min(p.length,5)].focus();if(p.length>=6)doAuth()});
+    c.appendChild(el);
+  }
+}
+function getPin(){return[...document.getElementById('pins').children].map(e=>e.value).join('')}
+function clearPin(){[...document.getElementById('pins').children].forEach(e=>e.value='');document.getElementById('pins').children[0].focus()}
+
+// ─── Auth ────────────────────────────────────────────────────────────────────
+async function doAuth() {
+  const pin=getPin(); if(pin.length<6){setErr('Enter all 6 digits');return}
+  if(!S.url){S.url=location.origin;sessionStorage.setItem('cs_url',S.url)}
+  const btn=document.getElementById('auth-btn');btn.disabled=true;btn.innerHTML='<span class="spin"></span> Connecting…';setErr('');
+  try {
+    const session=sessionStorage.getItem('cs_session')||'';
+    const res=await fetch(`${S.url}/api/auth`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({pin,session})});
+    const d=await res.json();
+    if(!res.ok){setErr(d.detail||'Wrong PIN');clearPin()}
+    else{S.token=d.auth_token;sessionStorage.setItem('cs_token',S.token);sessionStorage.setItem('cs_url',S.url);enterMain()}
+  }catch{setErr('Cannot reach server')}
+  btn.disabled=false;btn.innerHTML='Connect';
+}
+function setErr(m,c=''){const el=document.getElementById('auth-err');el.textContent=m;el.className='errmsg'+(c?' '+c:'')}
+
+// ─── Main ────────────────────────────────────────────────────────────────────
+function enterMain() {
+  document.getElementById('s-auth').classList.add('gone');
+  document.getElementById('s-main').classList.remove('gone');
+  document.getElementById('s-srv').textContent=S.url;
+  document.getElementById('s-surl').textContent=`${S.url}/api/clipboard`;
+  document.getElementById('s-tok').textContent=`X-Auth-Token: ${S.token.slice(0,12)}…`;
+  S.reconDelay=1500;
+  connectWS();
+  loadFiles();
+}
+function doDisconnect() {
+  clearTimeout(S.recon);clearInterval(S.ping);clearInterval(S.poll);
+  if(S.ws){try{S.ws.onclose=null;S.ws.close()}catch{}S.ws=null}
+  sessionStorage.clear();S.token='';S.url='';S.wsOk=false;
+  document.getElementById('s-main').classList.add('gone');
+  document.getElementById('s-auth').classList.remove('gone');
+  clearPin();
+}
+
+// ─── WebSocket ───────────────────────────────────────────────────────────────
+function connectWS() {
+  if(S.ws&&(S.ws.readyState===0||S.ws.readyState===1))return;
+  clearTimeout(S.recon);S.ws=null;
+  try{S.ws=new WebSocket(S.url.replace(/^http/,'ws')+'/ws')}catch{sched();return}
+
+  S.ws.onopen=()=>{try{S.ws.send(JSON.stringify({auth_token:S.token}))}catch{}};
+
+  S.ws.onmessage=ev=>{
+    try{
+      const m=JSON.parse(ev.data);
+      // Debug: count all messages
+      S._msgCount=(S._msgCount||0)+1;
+      if(m.type==='clipboard'&&m.from==='windows'){
+        S._winCount=(S._winCount||0)+1;
+      }
+      handle(m);
+    }catch(e){
+      toast('WS parse error: '+e.message,'bad');
+    }
+  };
+
+  S.ws.onclose=()=>{
+    const was=S.wsOk;S.wsOk=false;clearInterval(S.ping);
+    if(was)setBadge(false,'RECONNECTING');
+    startPoll();sched();
+  };
+  S.ws.onerror=()=>{};
+}
+
+function handle(m) {
+  if (m.type==='connected') {
+    S.wsOk=true;S.reconDelay=1500;
+    // Reset lastRx so the initial clipboard push from server always shows
+    S.lastRx='';
+    setBadge(true,'LIVE');clearInterval(S.poll);startPing();
+    document.getElementById('s-stat').textContent='Connected ✓';
+    toast('Connected to Windows','ok');
+  }
+  else if (m.type==='clipboard') {
+    if (m.from==='windows') {
+      const text=(m.text||'').trim();
+      if(!text){toast('Empty clipboard from Win','bad');return}
+      // Only skip exact duplicates received within 2 seconds
+      if(text===S.lastRx&&(Date.now()-S.lastRxTime)<2000){return}
+      S.lastRx=text; S.lastRxTime=Date.now();
+      onWinClip(text);
+    }
+  }
+  else if(m.type==='file_received'){toast(`Saved: ${m.name}`,'ok');loadFiles()}
+  else if(m.type==='pong'){}
+  else if(m.type==='error'){toast(m.msg,'bad');if(m.msg==='unauthorized')doDisconnect()}
+}
+
+function forceReconnect() {
+  clearTimeout(S.recon);clearInterval(S.ping);clearInterval(S.poll);S.wsOk=false;
+  if(S.ws){try{S.ws.onclose=null;S.ws.close()}catch{}S.ws=null}
+  S.reconDelay=1500;setBadge(false,'CONNECTING');setTimeout(connectWS,300);
+}
+function sched(){clearTimeout(S.recon);S.recon=setTimeout(()=>{connectWS();S.reconDelay=Math.min(S.reconDelay*1.5,12000)},S.reconDelay)}
+function startPing(){clearInterval(S.ping);S.ping=setInterval(()=>{if(S.ws&&S.ws.readyState===1)try{S.ws.send(JSON.stringify({type:'ping'}))}catch{}},15000)}
+
+function startPoll() {
+  clearInterval(S.poll); let lh='';
+  S.poll=setInterval(async()=>{
+    if(S.wsOk){clearInterval(S.poll);return}
+    try{
+      const r=await fetch(`${S.url}/api/clipboard`,{headers:{'X-Auth-Token':S.token}});
+      if(!r.ok)return;const d=await r.json();const t=(d.text||'').trim();
+      if(t&&d.hash!==lh){
+        if(t===S.lastRx&&(Date.now()-S.lastRxTime)<2000)return;
+        lh=d.hash;S.lastRx=t;S.lastRxTime=Date.now();onWinClip(t);
+      }
+    }catch{}
+  },3000);
+}
+
+function setBadge(live,label){document.getElementById('t-dot').className='t-dot'+(live?' live':'');document.getElementById('t-lbl').textContent=label}
+
+// ─── Clipboard: Send (iOS → Win) ────────────────────────────────────────────
+async function sendClip() {
+  const text=document.getElementById('ta-send').value.trim();
+  if(!text){toast('Nothing to send','bad');return}
+  if(norm(text)===norm(S.lastTx)&&(Date.now()-S.lastTxTime)<2000){toast('Already sent','ok');return}
+  S.lastTx=text;S.lastTxTime=Date.now();
+
+  let ok=false;
+  if(S.ws&&S.ws.readyState===1){try{S.ws.send(JSON.stringify({type:'clipboard',text}));ok=true}catch{}}
+  if(!ok){try{const r=await fetch(`${S.url}/api/clipboard`,{method:'POST',headers:{'Content-Type':'application/json','X-Auth-Token':S.token},body:JSON.stringify({text})});ok=r.ok}catch{}}
+
+  if(ok){
+    document.getElementById('send-ts').textContent='Sent at '+ts();
+    flash('send-section');addHist(text,'ios');toast('Sent to Windows','ok');
+  } else toast('Send failed','bad');
+}
+
+async function pasteIn(){try{const t=await navigator.clipboard.readText();document.getElementById('ta-send').value=t;toast('Pasted','ok')}catch{toast('Long-press to paste')}}
+
+function clearSend(){document.getElementById('ta-send').value='';document.getElementById('send-ts').textContent='';S.lastTx=''}
+
+// ─── Clipboard: Receive (Win → iOS) ─────────────────────────────────────────
+function onWinClip(text) {
+  // DOM updates FIRST — these always work
+  document.getElementById('ta-recv').value=text;
+  document.getElementById('recv-ts').textContent='Received at '+ts();
+  flash('recv-section');
+  addHist(text,'win');
+  toast('From Windows','ok');
+
+  // Auto-copy to iOS clipboard — may fail without user gesture, that's OK
+  if(S.autoCopy){
+    try{navigator.clipboard.writeText(text).catch(()=>{})}
+    catch(e){}
+  }
+}
+
+function copyRecv(){
+  const t=document.getElementById('ta-recv').value;
+  if(!t){toast('Nothing to copy','bad');return}
+  navigator.clipboard.writeText(t).then(()=>toast('Copied','ok')).catch(()=>toast('Copy failed','bad'));
+}
+
+function clearRecv(){document.getElementById('ta-recv').value='';document.getElementById('recv-ts').textContent='';S.lastRx=''}
+
+// ─── History ─────────────────────────────────────────────────────────────────
+function addHist(text,dir) {
+  const list=document.getElementById('hist-list');
+  const emp=list.querySelector('.empty');if(emp)emp.remove();
+  const t=ts();const b64=btoa(unescape(encodeURIComponent(text)));
+  const el=document.createElement('div');el.className='hist-item';
+  el.innerHTML=`<div class="hist-meta"><span class="hist-dir ${dir==='win'?'win':'ios'}">${dir==='win'?'WIN → iPHONE':'iPHONE → WIN'}</span><span><span class="hist-time">${t}</span><span class="hist-copy" onclick="doCopy(this,'${b64}')">COPY</span></span></div><div class="hist-body">${esc(text)}</div>`;
+  list.insertBefore(el,list.firstChild);
+  while(list.children.length>20)list.removeChild(list.lastChild);
+}
+function doCopy(el,b64){try{const t=decodeURIComponent(escape(atob(b64)));navigator.clipboard.writeText(t).then(()=>{el.textContent='✓';setTimeout(()=>el.textContent='COPY',1600)})}catch{}}
+
+function flash(id){const el=document.getElementById(id);el.classList.add('fx');setTimeout(()=>el.classList.remove('fx'),700)}
+
+// ─── Settings ────────────────────────────────────────────────────────────────
+function toggleAC(btn){S.autoCopy=!S.autoCopy;btn.className='toggle'+(S.autoCopy?' on':'');localStorage.setItem('cs_ac',S.autoCopy);toast(S.autoCopy?'Auto-copy ON':'Auto-copy OFF','ok')}
+
+// ─── Files ───────────────────────────────────────────────────────────────────
+const dz=document.getElementById('dz');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');pickFiles(e.dataTransfer.files)});
+function pickFiles(files){[...files].forEach(upload)}
+
+async function upload(file){
+  const ul=document.getElementById('ulist');const id='u'+Date.now();
+  const el=document.createElement('div');el.className='fitem';el.id=id;
+  el.innerHTML=`<div class="ficon">${icon(file.name)}</div><div class="finfo"><div class="fname">${esc(file.name)}</div><div class="fmeta">${fmt(file.size)}</div><div class="fprog"><div class="fprog-bar" id="b-${id}"></div></div></div><div class="fstat sending" id="s-${id}">SENDING</div>`;
+  ul.insertBefore(el,ul.firstChild);
+  const fd=new FormData();fd.append('file',file);const xhr=new XMLHttpRequest();
+  xhr.open('POST',`${S.url}/api/upload`);xhr.setRequestHeader('X-Auth-Token',S.token);
+  xhr.upload.onprogress=ev=>{if(ev.lengthComputable)document.getElementById(`b-${id}`).style.width=(ev.loaded/ev.total*100).toFixed(0)+'%'};
+  xhr.onload=()=>{const st=document.getElementById(`s-${id}`);if(xhr.status===200){st.textContent='DONE';st.className='fstat done';document.getElementById(`b-${id}`).style.width='100%';toast(`✓ ${file.name}`,'ok')}else{st.textContent='ERR';st.className='fstat err'}};
+  xhr.onerror=()=>{document.getElementById(`s-${id}`).textContent='ERR';document.getElementById(`s-${id}`).className='fstat err'};
+  xhr.send(fd);
+}
+
+async function loadFiles(){
+  try{const r=await fetch(`${S.url}/api/files`,{headers:{'X-Auth-Token':S.token}});if(!r.ok)return;const{files}=await r.json();
+  const dl=document.getElementById('dlist');if(!files.length){dl.innerHTML='<div class="empty">No files yet</div>';return}
+  dl.innerHTML='';files.forEach(f=>{const a=document.createElement('a');a.className='dl-link';a.href=`${S.url}/api/download/${encodeURIComponent(f.name)}?token=${S.token}`;a.download=f.name;a.innerHTML=`<span class="ficon">${icon(f.name)}</span><span class="dl-name">${esc(f.name)}</span><span class="dl-size">${fmt(f.size)}</span><span style="color:var(--sub)">↓</span>`;dl.appendChild(a)})}catch{}
+}
+
+// ─── Tabs ────────────────────────────────────────────────────────────────────
+function goTab(name,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));btn.classList.add('on');
+  document.querySelectorAll('.panel').forEach(p=>p.classList.add('off'));document.getElementById(`p-${name}`).classList.remove('off');
+  if(name==='files')loadFiles();
+  if(name==='settings'){
+    const stat=S.wsOk?'Connected ✓':'Offline';
+    const msgs=`${stat} · ${S._msgCount||0} msgs · ${S._winCount||0} win clips`;
+    document.getElementById('s-stat').textContent=msgs;
+  }
+}
+
+// ─── URL modal ───────────────────────────────────────────────────────────────
+function openUrlModal(){document.getElementById('url-modal').classList.add('open')}
+function closeUrlModal(){document.getElementById('url-modal').classList.remove('open')}
+function applyUrl(){const v=document.getElementById('url-inp').value.trim().replace(/\/$/,'');if(!v.startsWith('http')){alert('Enter URL like http://192.168.1.5:8765');return}S.url=v;sessionStorage.setItem('cs_url',v);closeUrlModal();setErr(`Server: ${v}`,'ok')}
+
+// ─── Toast ───────────────────────────────────────────────────────────────────
+let _tt,_tl='';
+function toast(m,c=''){if(m===_tl)return;_tl=m;setTimeout(()=>{if(_tl===m)_tl=''},2200);const el=document.getElementById('toast');el.textContent=m;el.className='show'+(c?' '+c:'');clearTimeout(_tt);_tt=setTimeout(()=>el.className='',2400)}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function fmt(b){if(b<1024)return b+' B';if(b<1048576)return(b/1024).toFixed(1)+' KB';return(b/1048576).toFixed(1)+' MB'}
+function icon(n){const e=n.split('.').pop().toLowerCase();const m={pdf:'📄',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ppt:'📑',pptx:'📑',jpg:'🖼',jpeg:'🖼',png:'🖼',gif:'🖼',webp:'🖼',heic:'🖼',mp4:'🎬',mov:'🎬',mp3:'🎵',wav:'🎵',zip:'🗜',rar:'🗜',txt:'📄',json:'🔧',js:'🔧',py:'🔧',html:'🔧',css:'🔧'};return m[e]||'📎'}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+
+// ─── Service Worker ──────────────────────────────────────────────────────────
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js').then(r=>r.update()).catch(()=>{});
+</script>
+</body>
+</html>
