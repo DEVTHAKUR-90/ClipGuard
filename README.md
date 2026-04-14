@@ -20,7 +20,6 @@ No cloud. No sign-ups. No BS. Just your Wi-Fi.
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
 ![WebSocket](https://img.shields.io/badge/WebSocket-Real--time-4A90D9?style=for-the-badge)
-![License](https://img.shields.io/badge/License-MIT-00ff88?style=for-the-badge)
 
 <br>
 
